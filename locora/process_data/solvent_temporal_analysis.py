@@ -15,8 +15,6 @@ from locora.process_data.utils import _make_1dhist, _make_2dhist
 from locora.utils.misc import are_you_numpy
 from locora.utils._read_write_ext import read_table_ext
 
-from locora.process_data.stationary_block_bootstrap import resample
-
 class solvent_temporal_analysis(object):
 
     def __init__(self, option_dict, start, stop):
