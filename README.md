@@ -1,6 +1,4 @@
 
-Hi!
-===
 This is *LoCorA*, a package that provides the Local Correlation Analysis method, both as a python-library and a command line tool. The method is a post-processing tool for molecular dynamics trajectories and is used for investigating temporal properties of water molecules on molecular surfaces. Its main application is the calculation of residence times and rotational time constants of water molecules that occupy the first hydration layer of a protein surface. The typical application of *LoCorA* is the analysis of water molecules in a protein binding pocket. The following pamphlet should give a technical introduction to the program and will be complemented by an upcoming paper. However, some more information on the background can be found in the sources provided in the *Background* section.
 
 
