@@ -1,7 +1,7 @@
 
 Hi!
 ===
-This is *LoCorA*, a package that provides the Local Correlation Analysis method, both as a python-library and a command line tool. The method is a post-processing tool for molecular dynamics trajectories and is used for investigating temporal properties of water molecules on molecular surfaces. Its main application is the calculation of residence times and rotational time constants of water molecules that occupy the first hydration layer of a solute surface. The following pamphlet should give a technical introduction to the program and will be complemented by an upcoming paper. However, some more background information on the background can be found in the sources provided in the Background section.
+This is *LoCorA*, a package that provides the Local Correlation Analysis method, both as a python-library and a command line tool. The method is a post-processing tool for molecular dynamics trajectories and is used for investigating temporal properties of water molecules on molecular surfaces. Its main application is the calculation of residence times and rotational time constants of water molecules that occupy the first hydration layer of a solute surface. The following pamphlet should give a technical introduction to the program and will be complemented by an upcoming paper. However, some more information on the background can be found in the sources provided in the *Background* section.
 
 Requirements
 ============
@@ -9,50 +9,53 @@ Requirements
 * GNU C compiler
 * python 2.7 (Anaconda2 recommended)
 * python packages: mdtraj, numpy, scipy, matplotlib, multiprocessing
-* python packages for installation only: pip, setuptools
+* python packages used for installation only: pip, setuptools
 
 
 Installation
 ============
 
-First, you have have to download the *LoCorA* package from GitHub
+First, download the *LoCorA* package from GitHub
     
 ```
 git clone https://github.com/wutobias/locora
 ```
 
-Then go into the locora directory and install the program
+Second, go into the locora directory and install the program
 
 ```
 python setup.py install
 ```
 
+That's all!
+
+
 Background
 ==========
 
-The background on the method and a case study is presented in our recent work [(Schiebel et al.)](https://www.nature.com/articles/s41467-018-05769-2) about a experimental and computational investigation on some trypsin structures, featuring several high-resolution neutron structures. Also, more background on the method and some prelimanary data from my study about thrombin-trypsin selectivity, can be found on my poster [link].
+The background on the method and a case study is presented in our recent work [*(Schiebel et al.)*](https://www.nature.com/articles/s41467-018-05769-2) about a experimental and computational investigation on some trypsin structures, featuring several high-resolution neutron structures. Also, more background on the method and some prelimanary data from my study about thrombin-trypsin selectivity, can be found on my poster [link].
 
 Functionalities
 ===============
 
-This is a brief introduction into the functionalities of the program. The main executable of *LoCorA* is called run_locora. Type run_locora --help into your shell in order to get an overview about all options and a brief description of their individual functionality.
+This is a brief introduction into the functionalities of the program. The main executable of *LoCorA* is called run_locora. Type run_locora --help into your shell in order to get an overview about all options and a brief description of their individual meaning.
 
 Run mode
 --------
-*LoCorA* has two possible modes of action, either "grid_solvent" or "process_data". The mode must be initialized with the --mode option and is mandatory for each run of the run_locora program. The "grid_solvent" mode builds the non-fixed coordinate system and performs all coordinate transformations on the water molecules. Internally, the program uses fractional coordinate representations of the water molecules, as if they were on a three dimensional grid (therefore it is called "grid_solvent"). Although the command line version does not support grid output, the coordinates of the water molecules can be easily made descrete through the python API (i.e. write them on a grid) and saved as Data Explorer (DX) file. Every coordinate axis in the non-fixed coordinate system is defined by a group of atoms and a specific operation performed to transform the coordinates into the coordinate system axis. The group of atoms must be specified by the user (more on atom defintions in the following paragraphs) and ideally should constitute a rigid substructure, e.g. a phenyl ring or a carboxylate group. 
-The program will write several files on your disk, which can be become rather large (~100-500MB each) depending on the size of the coordinate system and number of water molecules in the coordinate system. These files contain all information about the water molecules and the translation and rotation coordinates of the water molecules.
-The other run mode, "process_data", uses the data from the previous "grid_solvent" run (hence one must always run "grid_solvent" before "process_data") calculates averages of time constants as well as statistics of them. This run mode comes with several different optional arguments. Some of them will be presented in the following paragraphs.
+*LoCorA* has two possible modes of action, either "grid_solvent" or "process_data". The mode must be initialized with the *--mode* option and is mandatory for each run of the run_locora program. The "grid_solvent" mode builds the non-fixed coordinate system and performs all coordinate transformations on the water molecules. Internally, the program uses fractional coordinate representations of the water molecules. The water molecules are treated as if they were on a three dimensional grid (therefore it is called "grid_solvent"). Although the command line version does not support grid output, the coordinates of the water molecules can be easily made descrete through the python API (i.e. write them on a grid) and saved in Data Explorer (DX) file format. Every coordinate axis in the non-fixed coordinate system is defined by a group of atoms and specific operations performed to build the coordinate system axis. The group of atoms must be specified by the user (more on atom defintions in the following paragraphs) and ideally should constitute a rigid substructure, e.g. a phenyl ring or a carboxylate group. 
+Note, that the program will write several files on your disk, which can be become rather large (~100-500MB each) depending on the size of the coordinate system and number of water molecules in the coordinate system. These files contain all information about the water molecules and the translation and rotation coordinates of the water molecules.
+The other run mode, "process_data", uses the data from the previous "grid_solvent" run (hence, one must always run "grid_solvent" before "process_data") and it is used to calculate translational as well as rotational time constants. This run mode comes with several different optional arguments, which will be introduced in the following paragraphs.
 
 Input file
 ----------
-For every run of *LoCorA*, it is required to provide an input file by using the --input option (if not, an error will be raised). The input file contains all definitions of the non-fixed coordinate system as well as the locations of the files containing information about your system. Please note, that it is highly recommended to use the exact same input file for both run modes. However, it some cases it can be useful to some changes to the input file between running the grid_solvent and process_data commands (e.g. if the grid_solvent mode is run for several individual chunks of the trajectory, but the process_data mode must be performed on the full trajectory.)
-In the following every single parameter is explained, at the end you will find example of an input file:
+For every run of *LoCorA*, it is required to provide an input file by using the *--input* option (if not, an error will be raised). The input file contains all definitions of the non-fixed coordinate system as well as the locations of the files containing information about your system. Please note, that it is highly recommended to use the exact same input file for both run modes. However, in some cases it can be useful to make some changes to the input file between running the grid_solvent and process_data commands (e.g. if the grid_solvent mode is run for several individual chunks of the trajectory, but the process_data mode must be performed on the full trajectory.)
+In the following, every single parameter for the input file is explained, at the end you will find a working example of an input file.
 
 **trajin**
->The path to your trajectory file. It must be in a file format which can be read by mdtraj, the netcdf, dcd or xtc file formats usually work quite well.
+>The path to the trajectory file. It must be in a file format which can be read by mdtraj, the netcdf, dcd or xtc file formats usually work quite well.
 
 **parm**
->The to your parameter file. It must be in a file format which can be read mdtraj, but currently only amber parameter files (prmtop) are tested. So there it cannot be guaranteed that other file formats will work as well.
+>The path to the parameter file. It must be in a file format which can be read by mdtraj, however currently only amber parameter files (prmtop) are tested. Therefore, it cannot be guaranteed that other file formats will work as well.
 
 **start**
 >Start the trajectory analysis at this frame in the MD trajecory.
