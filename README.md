@@ -1,7 +1,8 @@
 
 Hi!
 ===
-This is *LoCorA*, a package that provides the Local Correlation Analysis method, both as a python-library and a command line tool. The method is a post-processing tool for molecular dynamics trajectories and is used for investigating temporal properties of water molecules on molecular surfaces. Its main application is the calculation of residence times and rotational time constants of water molecules that occupy the first hydration layer of a solute surface. The following pamphlet should give a technical introduction to the program and will be complemented by an upcoming paper. However, some more information on the background can be found in the sources provided in the *Background* section.
+This is *LoCorA*, a package that provides the Local Correlation Analysis method, both as a python-library and a command line tool. The method is a post-processing tool for molecular dynamics trajectories and is used for investigating temporal properties of water molecules on molecular surfaces. Its main application is the calculation of residence times and rotational time constants of water molecules that occupy the first hydration layer of a protein surface. The typical application of *LoCorA* is the analysis of water molecules in a protein binding pocket. The following pamphlet should give a technical introduction to the program and will be complemented by an upcoming paper. However, some more information on the background can be found in the sources provided in the *Background* section.
+
 
 Requirements
 ============
@@ -33,10 +34,10 @@ That's all!
 Background
 ==========
 
-The background on the method and a case study is presented in our recent work [*(Schiebel et al.)*](https://www.nature.com/articles/s41467-018-05769-2) about a experimental and computational investigation on some trypsin structures, featuring several high-resolution neutron structures. Also, more background on the method and some prelimanary data from my study about thrombin-trypsin selectivity, can be found on my poster [link].
+The background on the method and a case study is presented in our recent work [*(Schiebel et al.)*](https://www.nature.com/articles/s41467-018-05769-2) about a experimental and computational investigation on some trypsin structures, featuring several high-resolution neutron structures. The calculations in the paper were carried out with an earlier version of *LoCorA*, which can be obtained upon request. Also, more background on the method and some prelimanary data from my study about thrombin-trypsin selectivity, can be found on my poster [link].
 
-Functionalities
-===============
+Usage
+=====
 
 This is a brief introduction into the functionalities of the program. The main executable of *LoCorA* is called run_locora. Type run_locora --help into your shell in order to get an overview about all options and a brief description of their individual meaning.
 
@@ -52,68 +53,68 @@ For every run of *LoCorA*, it is required to provide an input file by using the 
 In the following, every single parameter for the input file is explained, at the end you will find a working example of an input file.
 
 **trajin**
->The path to the trajectory file. It must be in a file format which can be read by mdtraj, the netcdf, dcd or xtc file formats usually work quite well.
+The path to the trajectory file. It must be in a file format which can be read by mdtraj, the netcdf, dcd or xtc file formats usually work quite well.
 
 **parm**
->The path to the parameter file. It must be in a file format which can be read by mdtraj, however currently only amber parameter files (prmtop) are tested. Therefore, it cannot be guaranteed that other file formats will work as well.
+The path to the parameter file. It must be in a file format which can be read by mdtraj, however currently only amber parameter files (prmtop) are tested. Therefore, it cannot be guaranteed that other file formats will work as well.
 
 **start**
->Start the trajectory analysis at this frame in the MD trajecory.
+Start the trajectory analysis at this frame in the MD trajecory.
 
 **stop**
->Perform the analysis only up to this frame in the MD trajectory. When set to -1, it is performed up to the last frame of the trajectory.
+Perform the analysis only up to this frame in the MD trajectory. When set to -1, it is performed up to the last frame of the trajectory.
 
 **xx**
->This is a mdtraj-style selection mask, which specifies the atoms (from the trajectory and parameter files above) used for construction of the x-axis in the non-fixed coordinate system. The axis is defined as the average orientation of the connecting vectors between all possible combinations of atoms in the mask. Usually, it is a good idea to use a group of atoms which have a fixed orientation with respect to the other atoms defining the z-axis. For instance, for a tyrosine amino acid side chain, one would use two atoms on opposite positions of the phenyl ring (i.e. 1,4 neigboring). Note, that for mdtraj-style selection masks, residue numbering starts with 0.
+This is a mdtraj-style selection mask, which specifies the atoms (from the trajectory and parameter files above) used for construction of the x-axis in the non-fixed coordinate system. The axis is defined as the average orientation of the connecting vectors between all possible combinations of atoms in the mask. Usually, it is a good idea to use a group of atoms which have a fixed orientation with respect to the other atoms defining the z-axis. For instance, for a tyrosine amino acid side chain, one would use two atoms on opposite positions of the phenyl ring (i.e. 1,4 neigboring). Note, that for mdtraj-style selection masks, residue numbering starts with 0.
 
 **zz**
->This is a mdtraj-style selection mask, which specifies the atoms (from the trajectory and parameter files above) used for construction of the x-axis in the non-fixed coordinate system. The axis is defined as the average orientation of the normal vectors of the planes constructed from all possible combinations of the atoms in the mask. As already mentioned for the defintion of the other axis, it is wise to use a group of atoms which constitute a substructure that is rigid with respect the atoms defining the x-axis. Note, that for mdtraj-style selection masks, residue numbering starts with 0.
+This is a mdtraj-style selection mask, which specifies the atoms (from the trajectory and parameter files above) used for construction of the x-axis in the non-fixed coordinate system. The axis is defined as the average orientation of the normal vectors of the planes constructed from all possible combinations of the atoms in this mask. As already mentioned for the defintion of the other axis, it is wise to use a group of atoms which constitutes a substructure that is rigid with respect to the atoms defining the x-axis. Note, that for mdtraj-style selection masks, residue numbering starts with 0.
 
 **center**
->This is a mdtraj-style selection mask, which specifies the atoms used for construction of the center of the fractional coordinate system (i.e. (0.5|0.5|0.5) in fractional coordinates). The center is calculated from the geometrical mean of the atom postions. If center is not specified, the atoms from the xx and zz axis are used. Note, that for mdtraj-style selection masks, residue numbering starts with 0.
+This is a mdtraj-style selection mask, which specifies the atoms used for construction of the center of the fractional coordinate system (i.e. (0.5|0.5|0.5) in fractional coordinates). The center is calculated from the geometrical mean of the atom postions. If *center* is not specified, the atoms used to define the x and z axis are used. Note, that for mdtraj-style selection masks, residue numbering starts with 0.
 
 **xx_ref**
->This is a mdtraj-style selection mask, which specifies the atoms for construction of an internal reference orientation vector. In some cases, it can be useful to have an internal point of refernce for the construction of the coordinate system. If the gorup of atoms that constitutes the non-fixed coordinate system tends to be rather mobile, the non-fixed coordiante system could go undergo rotations about one or more of the coordiate axis. If the rotation of one of the axis around +/-180° would lead to an arrangement of the atoms, which cannot be distinguised from the arrangement at 0°, the non-fixed coordinate system would be rotated although the arrangement of the atoms remains unchanged. This would lead to an apparent rotation of the coordinate system. In order to curcumvent this, it is possible construct a reference vector spanned by the geometric center of the set of reference atoms *xx_ref* and the center of the non-fixed coordinate system. The dot product between this reference vector and the x-axis must satisfy the condition $x \cdot x_{ref} > 0 $, if not, then the vector defining the x-axis is multiplied by -1.
+This is a mdtraj-style selection mask, which specifies the atoms for construction of an internal reference orientation vector. In some cases, it can be useful to have an internal point of refernce for the construction of the coordinate system. If the group of atoms that constitutes the non-fixed coordinate system tends to be rather mobile, the non-fixed coordiante system could undergo rotations about one or more of the coordinate axis. If the rotation of one of the axis around +/-180° would lead to an arrangement of the atoms, which cannot be distinguised from the arrangement at 0°, the non-fixed coordinate system would be rotated although the arrangement of the atoms remains (physically) unchanged. This would lead to an apparent rotation of the coordinate system. In order to curcumvent this, it is possible construct a reference vector spanned by the geometric center of the set of reference atoms *xx_ref* and the center of the non-fixed coordinate system. The dot product between this reference vector and the x-axis must satisfy the condition $ x \cdot x_{ref} > 0 $, if not, then the vector defining the x-axis is multiplied by -1.
 
 **zz_ref**
->This is a mdtraj-sytle selection mask, and basically has the same meaning as *xx_ref* but for the z-axis. The vector defining the z-axis is multiplied by -1, if the inequality $z \cdot z_{ref} > 0 $ is not fulfilled.
+This is a mdtraj-sytle selection mask, and basically has the same meaning as *xx_ref* but for the z-axis. The vector defining the z-axis is multiplied by -1, if the inequality $ z \cdot z_{ref} > 0 $ is not fulfilled.
 
 **water**
->This is a mdtraj-style selection mask, which specifies the water molecules which will be included into the analysis.
+This is a mdtraj-style selection mask, which specifies the water molecules which will be included into the analysis.
 
 **dims**
->This is a triple of floating point numbers, which specifies the length of the box edges. Only the water molecules which are within this box (constructed using the non-fixed coordinate system) are recorded and saved to disk. Therefore, it is important to have dimensions that are big enough to encompass the full first hydration layer of the atoms of interest. However, the box edges should not be too big, because then the program will have consume more computational resources (RAM memory as well as disk space) and needs to more time to finish. Usually, (10,10,10) should be sufficient to capture the first hydration layer of most amino acid sidechains.
+This is a triple of floating point numbers, which specifies the length of the box edges. Only the water molecules which are within this box (constructed using the non-fixed coordinate system) are recorded and saved to disk. Therefore, it is important to have dimensions that are big enough to encompass the full first hydration layer of the atoms of interest. However, the box edges should not be too big, because then the program will consume more computational resources (RAM memory as well as disk space) and needs more time to finish. Usually, (10,10,10) should be sufficient to capture the first hydration layer of most amino acid sidechains.
 
 **unitcell**
->In this file, information about the orientation of the non-fixed coordinate system is stored as a (3x3) matrix for each frame.
+In this file, information about the orientation of the non-fixed coordinate system is stored as a (3x3) matrix for each frame.
 
 **pop**
->This file contains the number of water molecules that is present in the box for each frame
+This file contains the number of water molecules that is present in the box for each frame
 
 **frames**
->This file contains the frame number (i.e. the time stamp), in which a water molecule was found in the box (consecutively written for each frame).
+This file contains the frame number (i.e. the time stamp), in which a water molecule was found in the box (consecutively written for each frame).
 
 **center**
->The Cartesian coordinates of the origin for each frame
+The Cartesian coordinates of the center of the non-fixed coordinates system for each frame.
 
 **origin**
->... the origin.
+The Cartesian coordinates of the origin of the non-fixed coordinates system for each frame
 
 **O_idxs**
->The oxygen atom indices for all water molecules, which occupy the box (consecutively written for each frame).
+The oxygen atom indices for all water molecules, which occupy the box (consecutively written for each frame).
 
 **theta, phi, pis**
->The Euler angles of each water molecule occupying the box (consecutively written for each frame).
+The Euler angles of each water molecule occupying the box (consecutively written for each frame).
 
 **xx1_wat, xx2_wat, yy_wat, zz_wat**
->The water coordinate system axis (see Background and sources therein for more details) for each water molecule occupying the box (consecutively written for each frame).
+The water coordinate system axis (see Background and sources therein for more details) for each water molecule occupying the box (consecutively written for each frame).
 
 **O_frac, H1_frac, H2_frac**
->Fractional coordinates of oxygen and hydrogen atoms of water molecules that occupy the box (consecutively written for each frame).
+Fractional coordinates of oxygen and hydrogen atoms of water molecules that occupy the box (consecutively written for each frame).
 
 **Example input file**
 
-> 
+ 
 ```
 ### Trajectory and Parameter files ###
 ### ------------------------------ ###
@@ -155,14 +156,14 @@ H2_frac    H2_frac.dat
 Command Line Options
 ====================
 In order to see all possible command line options, type
-> 
+ 
 
 ```
 run_locora --help
 ```
 
-in order to get an overview about all options and a brief description of the meaning. Also note, that not all options are being used for every run mode.
-> 
+Also note, that not all options are being used for every run mode.
+ 
 
 ```
 usage: run_locora [-h] -i INPUT -m {grid_solvent,process_data} [-noim]
@@ -232,53 +233,52 @@ optional arguments:
 ```
 
 **-i, --input**
->The input file as outlined above.
+The location of the input file as outlined above.
 
 **-m, --mode**
->The run mode, can be either grid_solvent (the first step) or process_data (the second step).
+The run mode, can be either "grid_solvent" (the first step) or "process_data" (the second step).
 
 **-noim, --noimage**
->Switches off wrapping/imaging of coordinates back into the simulation cell. Usually it is not healthy to switch it off.
+Switches off wrapping/imaging of coordinates back into the simulation cell. Usually it is not healthy to switch it off.
 
 **-c, --cutoff**
->A water molecule must be less than *--cutoff* away from the center of the non-fixed coordinate system. If this condition is fulfilled, then it populates the solvent layer.
+A water molecule must be less than *--cutoff* away from the center of the non-fixed coordinate system. If this condition is fulfilled, then it populates the solvent layer.
 
 **-ts, --timestep**
->This is the physical timestep between MD frames in ps.
+This is the physical timestep between MD frames in picoseconds.
 
 **-ms, --minstep**
->Minimum number of MD steps that a water molecule must be present in order to be counted.
+Minimum number of MD steps that a water molecule must occupy the first hydration layer in order to populate it.
 
 **-tr, --transient***
->The number of transient MD steps that a water molecule is allowed to leave the solvent layer before it is treated as having left the solvent layer. The value of this option must be an integer tuple *(value1 value2)*, since all calculations are carried out for all transient steps between *value1* and *value2*.
+The maximum number of transient MD steps in between leaving and re-entering the solvent layer. If the water molecule re-enters the solvent layer in less than *--transient* number of steps, it is treated as not having left the solvent layer. The value of this option must be an integer tuple *(value1 value2)*, since the data processing is carried out for all transient steps between *value1* and *value2*.
 
 **-np, --nproc**
->The number of processes started during multiprocessing.
+The number of processes started during multiprocessing.
 
 **-pre, --prefix**
->Prefix used for names of the files written to disk.
+Prefix used for names of the files written to disk.
 
 **-w, --window**
->All time constants are calculated as averages over windows of the full trajectory. The length of these windows is given by this option. The averaging is carried out over sequentiel, non-overlapping windows, if the *--bootstrap* option is set to 0 (see below).
+All time constants are calculated as averages over windows taken from the full trajectory. The length of these windows is given by this option. The averaging is carried out over sequentiel, non-overlapping windows, if the *--bootstrap* option is set to 0 (see below).
 
 **-b, --bootstrap**
->If the value of this option is >0, the windows will be selected using bootstrapping. This effectively deactivates the use of sequentiel, non-overlapping windows. The length of the windows still the remains the same as specified with the *--windows* option. This approach is more robust and is recommended.
+If the value of this option is >0, the windows will be selected using bootstrapping. This effectively deactivates the use of sequentiel, non-overlapping windows. The length of the windows is specified with the *--windows* option. This approach is more robust then the use of sequentiel windows and is recommended.
 
 **-ne, --nonexp**
->Try to fit a function with a non-exponentiel factor *c* to the pseudo-autocorrelation. The function would have the form $C(t) = a [exp(-t/b)]^c + d$
+Try to fit a function with a non-exponentiel factor *c* to the pseudo-autocorrelation. The function would have the form $ C(t) = a [exp(-t/b)]^c + d $
 
 **-pl, --plot**
->Generate some plots showing distributions of water density and lifetimes.
+Generate some plots showing distributions of water density and lifetimes.
 
 **-ai, --anisotropic**
->Perform anisotropic analysis. If this option is activated, the non-fixed coordinate system is subdevided into its octants and the analysis is performed individually for each one of them.
+Perform anisotropic analysis. If this option is activated, the non-fixed coordinate system is subdevided into its octants and the analysis is performed individually for each one of them.
 
 **-lp, --legendre**
->Specify the order of the Legendre polynom used for calculation of orientational lifetimes.
+This option specifies the order of the Legendre polynom used for calculation of orientational lifetimes.
 
 **-v, --verbose**
->Verbose output or not. Note, that in *--mode=grid_solvent*, PDB files with the coordinates of the water molecules in the box defined by the non-fixed coordinate system are written to disk (might generate a lot of data...)
-
+Verbose output or not. Note, that in *--mode=grid_solvent*, PDB files with the coordinates of the water molecules in the box (as defined by the non-fixed coordinate system) are written to disk, if the verbose mode is active. This might generate a lot of data...
 
 Contact
 =======
