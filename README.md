@@ -32,7 +32,7 @@ That's all!
 Background
 ==========
 
-The background on the method and a case study is presented in our recent work [*(Schiebel et al.)*](https://www.nature.com/articles/s41467-018-05769-2) about a experimental and computational investigation on some trypsin structures, featuring several high-resolution neutron structures. The calculations in the paper were carried out with an earlier version of *LoCorA*, which can be obtained upon request. Also, more background on the method and some prelimanary data from my study about thrombin-trypsin selectivity, can be found on my poster [link].
+The background on the method and a case study is presented in our recent work [*(Schiebel et al.)*](https://www.nature.com/articles/s41467-018-05769-2) about a experimental and computational investigation on some trypsin structures, featuring several high-resolution neutron structures. The calculations in this paper were carried out with an earlier version of *LoCorA*, which can be obtained upon request. 
 
 Usage
 =====
@@ -72,7 +72,7 @@ This is a mdtraj-style selection mask, which specifies the atoms (from the traje
 This is a mdtraj-style selection mask, which specifies the atoms used for construction of the center of the fractional coordinate system (i.e. (0.5|0.5|0.5) in fractional coordinates). The center is calculated from the geometrical mean of the atom postions. If *center* is not specified, the atoms used to define the x and z axis are used. Note, that for mdtraj-style selection masks, residue numbering starts with 0.
 
 **xx_ref**
-This is a mdtraj-style selection mask, which specifies the atoms for construction of an internal reference orientation vector. In some cases, it can be useful to have an internal point of refernce for the construction of the coordinate system. If the group of atoms that constitutes the non-fixed coordinate system tends to be rather mobile, the non-fixed coordiante system could undergo rotations about one or more of the coordinate axis. If the rotation of one of the axis around +/-180° would lead to an arrangement of the atoms, which cannot be distinguised from the arrangement at 0°, the non-fixed coordinate system would be rotated although the arrangement of the atoms remains (physically) unchanged. This would lead to an apparent rotation of the coordinate system. In order to curcumvent this, it is possible construct a reference vector spanned by the geometric center of the set of reference atoms *xx_ref* and the center of the non-fixed coordinate system. The dot product between this reference vector and the x-axis must satisfy the condition $ x \cdot x_{ref} > 0 $, if not, then the vector defining the x-axis is multiplied by -1.
+This is a mdtraj-style selection mask, which specifies the atoms for construction of an internal reference orientation vector. In some cases, it can be useful to have an internal point of refernce for the construction of the coordinate system. If the group of atoms that constitutes the non-fixed coordinate system tends to be rather mobile, the non-fixed coordiante system could undergo rotations about one or more of the coordinate axis. If the rotation of one of the axis around +/-180Â° would lead to an arrangement of the atoms, which cannot be distinguised from the arrangement at 0Â°, the non-fixed coordinate system would be rotated although the arrangement of the atoms remains (physically) unchanged. This would lead to an apparent rotation of the coordinate system. In order to curcumvent this, it is possible construct a reference vector spanned by the geometric center of the set of reference atoms *xx_ref* and the center of the non-fixed coordinate system. The dot product between this reference vector and the x-axis must satisfy the condition $ x \cdot x_{ref} > 0 $, if not, then the vector defining the x-axis is multiplied by -1.
 
 **zz_ref**
 This is a mdtraj-sytle selection mask, and basically has the same meaning as *xx_ref* but for the z-axis. The vector defining the z-axis is multiplied by -1, if the inequality $ z \cdot z_{ref} > 0 $ is not fulfilled.
@@ -281,8 +281,8 @@ Contact
 
 Main Author of the Program
 --------------------------
-* Tobias Hüfner-Wulsdorf, Philipps-Universität Marburg, tobias.wulsdorf@gmail.com 
+* Tobias HÃ¼fner-Wulsdorf, Philipps-UniversitÃ¤t Marburg, tobias.wulsdorf@gmail.com 
 
 Scientific Supervision
 ----------------------
-* Gerhard Klebe, Philipps-Universität Marburg, klebe@staff.uni-marburg.de
+* Gerhard Klebe, Philipps-UniversitÃ¤t Marburg, klebe@staff.uni-marburg.de
