@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 import numpy as np
-from scipy.optimize import curve_fit
+#from scipy.optimize import curve_fit
+from scipy.optimize import basinhopping
 from scipy import stats
 
 def generate_timeseries(N, k):
@@ -124,29 +125,10 @@ def int_lifetime(X, dt=1.):
     return np.trapz(X, dx=dt)
 
 
-def func_3(x, a, b, c):
-    
-    """
-    Analytical form of a first order lifetime distribution.
-    """
-    
-    return a * np.exp(-(x/b)) + c
+def fit_lifetime_expansion(X, dt=2., double_exp=True, verbose=False):
 
-
-def func_4(x, a, b, c, d):
-    
     """
-    Analytical form of a (pseudo-)first order lifetime distribution.
-    The parameter c corrects for non-exponential behaviour.
-    """
-    
-    return a * np.exp(-(x/b)**d) + c
-
-
-def fit_lifetime(X, dt=2., non_exponential=False):
-    
-    """
-    Method for fitting data to a first order 
+    Method for fitting data to a n-th order 
     lifetime distribution function.
     """
 
@@ -155,23 +137,59 @@ def fit_lifetime(X, dt=2., non_exponential=False):
 
     valids = ~np.isnan(X)
 
-    try:
+    if double_exp:
+        def func(x, w, tau1, tau2):
+            A1 = np.exp(-x/tau1)
+            A2 = np.exp(-x/tau2)
+            
+            dC_dw  = -A1 + A2
+            C1     = (1.-w) * A1
+            C2     =     w  * A2
+            dC_dtau1 = x/tau1**2 * C1
+            dC_dtau2 = x/tau2**2 * C2
 
-        if non_exponential:
-            popt, pcov = curve_fit(func_4, t[valids], X[valids],
-                                    bounds=(0.,np.inf), 
-                                    method='trf')
-        else:
-            popt, pcov = curve_fit(func_3, t[valids], X[valids],
-                                    bounds=(0.,np.inf), 
-                                    method='trf')
+            return (C1+C2), [dC_dw, dC_dtau1, dC_dtau2]
 
-    except:
+        p0 = np.zeros(3, dtype=float)
+        bounds = [[0.00001, 1.],
+                  [0.00001, 9999999999999999999999999999.],
+                  [0.00001, 9999999999999999999999999999.]]
 
-        popt = np.array([np.nan])
-        pcov = np.array([np.nan])
+    else:
+        def func(x, w, tau):
 
-    return popt, pcov
+            dC_dw   = np.exp(-x/tau)
+            C       = w * dC_dw
+            dC_dtau = x/tau**2 * C
+
+            return C, [dC_dw, dC_dtau]
+
+        p0     = np.zeros(2, dtype=float)
+        bounds = [[0.001, 1.],
+                  [0.001, 9999999999999999999999999999.]]
+
+    minimizer_kwargs = { "bounds" : bounds,
+                         "jac"    : True }
+
+    def objective(parms):
+        
+        f    = func(t[valids], *parms)
+        diff = f[0]-X[valids]
+
+        return np.sum(diff**2), 2.*np.einsum('i,ji->j', diff, f[1])
+
+    if verbose:
+        print "Starting Optimization..."
+    opt = basinhopping(objective, 
+                        p0,
+                        niter=30,
+                        minimizer_kwargs=minimizer_kwargs,
+                        disp=verbose,
+                        niter_success=10)
+
+    R2 = 1. - objective(opt.x)[0]/np.sum((X[valids]-np.mean(X[valids]))**2)
+
+    return opt.x, R2   
 
 
 def get_stats(X, dt=2.):

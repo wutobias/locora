@@ -165,10 +165,10 @@ Also note, that not all options are being used for every run mode.
 
 ```
 usage: run_locora [-h] -i INPUT -m {grid_solvent,process_data} [-noim]
-                  [-ts TIMESTEP] [-ms MINSTEP] [-tr TRANSIENT TRANSIENT]
-                  [-np NPROC] [-pre PREFIX] [-w WINDOW] [-b BOOTSTRAP]
-                  [-k DECAYCONSTANT] [-c CUTOFF] [-ne] [-pl] [-ai]
-                  [-lp LEGENDRE] [-v]
+                  [-c CUTOFF] [-ts TIMESTEP] [-ms MINSTEP]
+                  [-tr TRANSIENT TRANSIENT] [-np NPROC] [-pre PREFIX]
+                  [-w WINDOW] [-b BOOTSTRAP] [-pl] [-ai] [-lp LEGENDRE] [-de]
+                  [-v]
 
 Executable for solute-solvent local correlation analysis.
 
@@ -214,9 +214,6 @@ optional arguments:
                         --boostrap bootstrapping iterations are performed for
                         windows of legnth --window. Default is 0. Only used in
                         mode=process_data.
-  -ne, --nonexp         Use non-exponential functional fitting. Default is off
-                        (=no non-exponential fitting). Only used in
-                        mode=process_data.
   -pl, --plot           Turn on plotting. Default is off (=no plotting). Only
                         used in mode=process_data.
   -ai, --anisotropic    Perform anisotropic analysis. Default is off (=no
@@ -226,8 +223,9 @@ optional arguments:
                         orientational lifetimes. Can be either 1 or 2. Default
                         is 1(=First order Legendre polynomial). Only used in
                         mode=process_data.
+  -de, --double-exp     Perform double exponential fitting. Only used in
+                        mode=process_data.
   -v, --verbose         Verbosity output. Default is off.
-
 ```
 
 **-i, --input**
@@ -263,9 +261,6 @@ All time constants are calculated as averages over windows taken from the full t
 **-b, --bootstrap**
 If the value of this option is >0, the windows will be selected using bootstrapping. This effectively deactivates the use of sequentiel, non-overlapping windows. The length of the windows is specified with the *--windows* option. This approach is more robust then the use of sequentiel windows and is recommended.
 
-**-ne, --nonexp**
-Try to fit a function with a non-exponentiel factor *c* to the pseudo-autocorrelation. The function would have the form $ C(t) = a [exp(-t/b)]^c + d $
-
 **-pl, --plot**
 Generate some plots showing distributions of water density and lifetimes.
 
@@ -275,6 +270,9 @@ Perform anisotropic analysis. If this option is activated, the non-fixed coordin
 **-lp, --legendre**
 This option specifies the order of the Legendre polynom used for calculation of orientational lifetimes.
 
+**-de, --double-exp**
+Use a weighted double exponential fit instead of only a single exponential.
+
 **-v, --verbose**
 Verbose output or not. Note, that in *--mode=grid_solvent*, PDB files with the coordinates of the water molecules in the box (as defined by the non-fixed coordinate system) are written to disk, if the verbose mode is active. This might generate a lot of data...
 
@@ -283,7 +281,7 @@ Contact
 
 Main Author of the Program
 --------------------------
-* Tobias Wulsdorf, Philipps-Universität Marburg, tobias.wulsdorf@gmail.com 
+* Tobias Hüfner-Wulsdorf, Philipps-Universität Marburg, tobias.wulsdorf@gmail.com 
 
 Scientific Supervision
 ----------------------

@@ -1,7 +1,7 @@
 from setuptools import setup, Extension, find_packages
 import numpy as np
 
-__version__ = "0.2"
+__version__ = "0.4"
 
 # define the extension module
 extensions = []
@@ -23,7 +23,7 @@ extensions.append(Extension('locora.utils._read_write_ext',
                             language='c'))
 
 setup(name='locora',
-      author='Tobias Wulsdorf',
+      author='Tobias Hüfner-Wulsdorf',
       author_email='tobias.wulsdorf@gmail.com',
       description='LoCorA: A tool for studying local correlations between solute entities and solvent molecules',
       version=__version__,

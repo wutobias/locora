@@ -6,14 +6,15 @@ import matplotlib.cm as cm
 
 from collections import OrderedDict
 
-from locora.process_data.utils import fit_lifetime
-from locora.process_data.utils import int_lifetime
+from locora.process_data.utils import fit_lifetime_expansion
 from locora.process_data._utils_ext import lifetime_distr_ext
 from locora.process_data._utils_ext import lifetime_distr_majmin_ext
 from locora.process_data.utils import _make_1dhist, _make_2dhist
 
 from locora.utils.misc import are_you_numpy
 from locora.utils._read_write_ext import read_table_ext
+
+from locora.process_data.stationary_block_bootstrap import resample
 
 class solvent_temporal_analysis(object):
 
@@ -24,11 +25,12 @@ class solvent_temporal_analysis(object):
         self.N_resample  = int(option_dict['bootstrap'])
         self.window_size = int(option_dict['window'])
         self.timestep    = float(option_dict['timestep'])
-        self.nonexp      = option_dict['nonexp']
         self.plot        = option_dict['plot']
         self.transient   = 0
         self.aniso       = option_dict['anisotropic']
         self.minstep     = int(option_dict['minstep'])
+        self.P_order     = int(option_dict['legendre'])
+        self.double_exp  = int(option_dict['double_exp'])
 
         self.start       = int(start)
         self.stop        = int(stop)
@@ -49,30 +51,57 @@ class solvent_temporal_analysis(object):
 
         self.check()
 
-        #__table_load = np.loadtxt
-        __table_load = read_table_ext
+        _npload  = np.loadtxt
+        _extload = read_table_ext
 
         if self.verbose:
             print "Loading %s ..." %option_dict['O_idxs'][0]
-        self.O_idxs_data  = __table_load(option_dict['O_idxs'][0]).astype(np.int)
+        if option_dict['O_idxs'][0].endswith(".gz"):
+            self.O_idxs_data = _npload(option_dict['O_idxs'][0]).astype(np.int)
+        else:
+            self.O_idxs_data = _extload(option_dict['O_idxs'][0]).astype(np.int)
+
         if self.verbose:
             print "Loading %s ..." %option_dict['xx1_wat'][0]
-        self.xx1_wat_data = __table_load(option_dict['xx1_wat'][0]).astype(np.float)
+        if option_dict['xx1_wat'][0].endswith(".gz"):
+            self.xx1_wat_data = _npload(option_dict['xx1_wat'][0]).astype(np.float)
+        else:
+            self.xx1_wat_data = _extload(option_dict['xx1_wat'][0]).astype(np.float)
+        
         if self.verbose:
             print "Loading %s ..." %option_dict['xx2_wat'][0]
-        self.xx2_wat_data = __table_load(option_dict['xx2_wat'][0]).astype(np.float)
+        if option_dict['xx2_wat'][0].endswith(".gz"):
+            self.xx2_wat_data = _npload(option_dict['xx2_wat'][0]).astype(np.float)
+        else:
+            self.xx2_wat_data = _extload(option_dict['xx2_wat'][0]).astype(np.float)
+        
         if self.verbose:
             print "Loading %s ..." %option_dict['yy_wat'][0]
-        self.yy_wat_data  = __table_load(option_dict['yy_wat'][0]).astype(np.float)
+        if option_dict['yy_wat'][0].endswith(".gz"):
+            self.yy_wat_data = _npload(option_dict['yy_wat'][0]).astype(np.float)
+        else:
+            self.yy_wat_data = _extload(option_dict['yy_wat'][0]).astype(np.float)
+
         if self.verbose:
             print "Loading %s ..." %option_dict['zz_wat'][0]
-        self.zz_wat_data  = __table_load(option_dict['zz_wat'][0]).astype(np.float)
+        if option_dict['zz_wat'][0].endswith(".gz"):
+            self.zz_wat_data = _npload(option_dict['zz_wat'][0]).astype(np.float)
+        else:
+            self.zz_wat_data = _extload(option_dict['zz_wat'][0]).astype(np.float)
+        
         if self.verbose:
             print "Loading %s ..." %option_dict['O_frac'][0]
-        self.O_frac_data  = __table_load(option_dict['O_frac'][0]).astype(np.float)
+        if option_dict['O_frac'][0].endswith(".gz"):
+            self.O_frac_data = _npload(option_dict['O_frac'][0]).astype(np.float)
+        else:
+            self.O_frac_data = _extload(option_dict['O_frac'][0]).astype(np.float)
+        
         if self.verbose:
             print "Loading %s ..." %option_dict['frames'][0]
-        self.frame_data   = __table_load(option_dict['frames'][0]).astype(np.int)
+        if option_dict['frames'][0].endswith(".gz"):
+            self.frame_data = _npload(option_dict['frames'][0]).astype(np.int)
+        else:
+            self.frame_data = _extload(option_dict['frames'][0]).astype(np.int)
 
         self.transient = 0
         self.plane     = [[], []]
@@ -81,21 +110,17 @@ class solvent_temporal_analysis(object):
 
         self.selection = []
 
-        self.P_order   = 1
+        self.R2_trans  = np.zeros(self.N_windows, dtype=float)
+        self.w_trans   = np.zeros(self.N_windows, dtype=float)
+        self.w_orient  = np.zeros((3, self.N_windows), dtype=float)
+        if self.double_exp:
+            self.tau_trans  = np.zeros((self.N_windows, 2), dtype=float)
+            self.tau_orient = np.zeros((3, self.N_windows, 2), dtype=float)
+        else:
+            self.tau_trans  = np.zeros(self.N_windows, dtype=float)
+            self.tau_orient = np.zeros((3, self.N_windows), dtype=float)
 
-        self.tau_trans = np.zeros(self.N_windows, dtype=float)
-        self.a_trans   = np.zeros(self.N_windows, dtype=float)
-        self.b_trans   = np.zeros(self.N_windows, dtype=float)
-        self.c_trans   = np.zeros(self.N_windows, dtype=float)
-        if self.nonexp:
-            self.d_trans = np.zeros(self.N_windows, dtype=float)
-
-        self.tau_orient = np.zeros((3, self.N_windows), dtype=float)
-        self.a_orient   = np.zeros((3, self.N_windows), dtype=float)
-        self.b_orient   = np.zeros((3, self.N_windows), dtype=float)
-        self.c_orient   = np.zeros((3, self.N_windows), dtype=float)
-        if self.nonexp:
-            self.d_orient = np.zeros((3, self.N_windows), dtype=float)
+        self.R2_orient  = np.zeros((3, self.N_windows), dtype=float)
 
         self.header_trans  = "# t* "
         self.header_orient = "# t* "
@@ -128,11 +153,14 @@ class solvent_temporal_analysis(object):
                               over whole trajectory and not over seperate windows.")
         if self.traj_length<self.window_size:
             raise ValueError("window cannot be longer than length of trajectory %d." %self.traj_length)
+        if self.P_order not in [1,2]:
+            raise ValueError("P_order must be either 1 or 2.")
 
 
     def set_order(self, P_order):
 
         self.P_order = P_order
+
 
     def set_transient(self, transient):
 
@@ -241,38 +269,117 @@ class solvent_temporal_analysis(object):
         self.scope_orient_avg = ""
         self.scope_orient_std = ""
 
+        self.all_trans=list()
+        self.all_orient=list()
+
         plot_trans=OrderedDict()
         plot_orient=OrderedDict()
 
-        valids            = np.invert(np.isnan(self.tau_trans))
+        valids = np.arange(self.w_trans.shape[0], dtype=int)[np.invert(np.isnan(self.w_trans))]
 
-        plot_trans['tau'] = self.tau_trans[valids]
-        plot_trans['a']   = self.a_trans[valids]
-        plot_trans['b']   = self.b_trans[valids]
-        plot_trans['c']   = self.c_trans[valids]
-        if self.nonexp:
-            plot_trans['d'] = self.d_trans[valids]
+        ### ~~~~~~~~~~~~~~~~~~~~~~~~~~ ###
+        ### Prepare the all data files ###
+        ### ~~~~~~~~~~~~~~~~~~~~~~~~~~ ###
 
-        plot_orient['tau-x1'] = self.tau_orient[0,valids]
-        plot_orient['a-x1']   = self.a_orient[0,valids]
-        plot_orient['b-x1']   = self.b_orient[0,valids]
-        plot_orient['c-x1']   = self.c_orient[0,valids]
-        if self.nonexp:
-            plot_orient['d-x1'] = self.d_orient[0,valids]
+        ### Sort the tau parameters in descending order
+        if self.double_exp:
+            tau_trans_sorted   = np.flip(np.argsort(self.tau_trans, axis=-1), axis=-1)
+            tau0_orient_sorted = np.flip(np.argsort(self.tau_orient[0], axis=-1), axis=-1)
+            tau1_orient_sorted = np.flip(np.argsort(self.tau_orient[1], axis=-1), axis=-1)
+            tau2_orient_sorted = np.flip(np.argsort(self.tau_orient[2], axis=-1), axis=-1)
 
-        plot_orient['tau-y'] = self.tau_orient[1,valids]
-        plot_orient['a-y']   = self.a_orient[1,valids]
-        plot_orient['b-y']   = self.b_orient[1,valids]
-        plot_orient['c-y']   = self.c_orient[1,valids]
-        if self.nonexp:
-            plot_orient['d-y'] = self.d_orient[1,valids]
+        for j in valids:
+            ### Resorting
+            ### ---------
+            ### Initially, reorder all parameters, such that
+            ### the slowest process (i.e. the one with the lowest
+            ### tau value) is the first on each row and the slowest
+            ### process is the second on each row.
+            if self.double_exp:
+                self.tau_trans[j]    = self.tau_trans[j,tau_trans_sorted[j]]
 
-        plot_orient['tau-z'] = self.tau_orient[2,valids]
-        plot_orient['a-z']   = self.a_orient[2,valids]
-        plot_orient['b-z']   = self.b_orient[2,valids]
-        plot_orient['c-z']   = self.c_orient[2,valids]
-        if self.nonexp:
-            plot_orient['d-z'] = self.d_orient[2,valids]
+                self.tau_orient[0,j] = self.tau_orient[0,j,tau0_orient_sorted[j]]
+                self.tau_orient[1,j] = self.tau_orient[1,j,tau1_orient_sorted[j]]
+                self.tau_orient[2,j] = self.tau_orient[2,j,tau2_orient_sorted[j]]
+
+            ### Order data for output
+            ### ---------------------
+            self.all_trans.append("")
+            self.all_orient.append("")
+            
+            if self.double_exp:
+
+                self.all_trans[-1] += "%6.3f " %self.w_trans[j]
+                self.all_trans[-1] += "%6.3f " %self.tau_trans[j,0]
+                self.all_trans[-1] += "%6.3f " %self.tau_trans[j,1]
+
+                self.all_orient[-1] += "%6.3f " %self.w_orient[0,j]
+                self.all_orient[-1] += "%6.3f " %self.tau_orient[0,j,0]
+                self.all_orient[-1] += "%6.3f " %self.tau_orient[0,j,1]
+
+                self.all_orient[-1] += "%6.3f " %self.w_orient[1,j]
+                self.all_orient[-1] += "%6.3f " %self.tau_orient[1,j,0]
+                self.all_orient[-1] += "%6.3f " %self.tau_orient[1,j,1]
+
+                self.all_orient[-1] += "%6.3f " %self.w_orient[2,j]
+                self.all_orient[-1] += "%6.3f " %self.tau_orient[2,j,0]
+                self.all_orient[-1] += "%6.3f " %self.tau_orient[2,j,1]
+
+            else:
+                self.all_trans[-1] += "%6.3f " %self.w_trans[j]
+                self.all_trans[-1] += "%6.3f " %self.tau_trans[j]
+
+                self.all_orient[-1] += "%6.3f " %self.w_orient[0,j]
+                self.all_orient[-1] += "%6.3f " %self.tau_orient[0,j]
+
+                self.all_orient[-1] += "%6.3f " %self.w_orient[1,j]
+                self.all_orient[-1] += "%6.3f " %self.tau_orient[1,j]
+
+                self.all_orient[-1] += "%6.3f " %self.w_orient[2,j]
+                self.all_orient[-1] += "%6.3f " %self.tau_orient[2,j]
+
+            self.all_trans[-1]  += "%6.3f " %self.R2_trans[j]
+            self.all_orient[-1] += "%6.3f " %self.R2_orient[0,j]
+            self.all_orient[-1] += "%6.3f " %self.R2_orient[1,j]
+            self.all_orient[-1] += "%6.3f " %self.R2_orient[2,j]
+
+        ### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ###
+        ### Prepare the avg and std data files ###
+        ### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ###
+
+        if self.double_exp:
+            plot_trans['w']       = self.w_trans[valids]
+            plot_trans['tau1']     = self.tau_trans[valids,0]
+            plot_trans['tau2']     = self.tau_trans[valids,1]
+
+            plot_orient['w-x1']   = self.w_orient[0,valids]
+            plot_orient['tau1-x1'] = self.tau_orient[0,valids,0]
+            plot_orient['tau2-x1'] = self.tau_orient[0,valids,1]
+
+            plot_orient['w-y']    = self.w_orient[1,valids]
+            plot_orient['tau1-y']  = self.tau_orient[1,valids,0]
+            plot_orient['tau2-y']  = self.tau_orient[1,valids,1]
+
+            plot_orient['w-z']    = self.w_orient[2,valids]
+            plot_orient['tau1-z']  = self.tau_orient[2,valids,0]
+            plot_orient['tau2-z']  = self.tau_orient[2,valids,1]
+        else:
+            plot_trans['w']       = self.w_trans[valids]
+            plot_trans['tau']     = self.tau_trans[valids]
+
+            plot_orient['w-x1']   = self.w_orient[0,valids]
+            plot_orient['tau-x1'] = self.tau_orient[0,valids]
+
+            plot_orient['w-y']    = self.w_orient[1,valids]
+            plot_orient['tau-y']  = self.tau_orient[1,valids]
+
+            plot_orient['w-z']    = self.w_orient[2,valids]
+            plot_orient['tau-z']  = self.tau_orient[2,valids]
+
+        plot_trans['R2']     = self.R2_trans[valids]
+        plot_orient['R2-x1'] = self.R2_orient[0,valids]
+        plot_orient['R2-y']  = self.R2_orient[1,valids]
+        plot_orient['R2-z']  = self.R2_orient[2,valids]
 
         for name, data in plot_trans.items():
             
@@ -296,10 +403,10 @@ class solvent_temporal_analysis(object):
                 except:
                     print "Could not make 1d histogram for %s_%s" %(self.prefix, filename)
 
-            self.scope_trans_avg  += "%6.3f " %data.mean()
-            self.scope_trans_std  += "%6.3f " %data.std()
+            self.scope_trans_avg += "%6.3f " %data.mean()
+            self.scope_trans_std += "%6.3f " %data.std()
 
-            self.header_trans += " "
+            self.header_trans    += " "
 
         for name, data in plot_orient.items():
             
@@ -354,27 +461,19 @@ class solvent_temporal_analysis(object):
                 _start = _stop
             _stop  = _start+self.window_size
             if self.verbose:
-                print "Processing frame %d to %d ..." %(_start, _stop)
+                print "Processing window %d using frame %d to %d ..." %(i, _start, _stop)
             window_idxs   = np.where((self.frame_data[self.selection]>=_start) *\
                                      (self.frame_data[self.selection]<_stop))[0]
             if self.verbose:
                 print "Found %d water molecules in time interval ..." %window_idxs.shape[0]
             if window_idxs.shape[0]<self.minstep:
                 if self.verbose:
-                    print "Skipped lifetime calculation for this window due to low occupancy."
+                    print "Skipped lifetime calculation for window %d due to low occupancy." %i
+                self.w_trans[i]   = np.nan
                 self.tau_trans[i] = np.nan
-                self.a_trans[i]   = np.nan
-                self.b_trans[i]   = np.nan
-                self.c_trans[i]   = np.nan
-                if self.nonexp:
-                    self.d_trans[i] = np.nan
 
-                self.tau_orient[:, i] = np.nan
-                self.a_orient[:, i]   = np.nan
-                self.b_orient[:, i]   = np.nan
-                self.c_orient[:, i]   = np.nan
-                if self.nonexp:
-                    self.d_orient[:, i] = np.nan
+                self.w_orient[:,i]   = np.nan
+                self.tau_orient[:,i] = np.nan
                 continue
 
             _frame_data   = self.frame_data[self.selection][window_idxs]
@@ -393,26 +492,23 @@ class solvent_temporal_analysis(object):
                                              0).astype(float)
             corr_distr /= corr_distr[0]
 
-            self.tau_trans[i] = int_lifetime(corr_distr, self.timestep)
+            parms, R2 = fit_lifetime_expansion(corr_distr, 
+                                                dt=self.timestep,
+                                                double_exp=self.double_exp,
+                                                verbose=self.verbose)
 
-            popt, pcov  = fit_lifetime(corr_distr, 
-                                       dt=self.timestep, 
-                                       non_exponential=self.nonexp)
+            self.R2_trans[i]  = R2
 
-            if popt[0] == np.nan or popt.shape[0]==1:
-                self.a_trans[i] = np.nan
-                self.b_trans[i] = np.nan
-                self.c_trans[i] = np.nan
-                if self.nonexp:
-                    self.d_trans[i] = np.nan
-
+            if parms[0] == np.nan or parms.shape[0]==1:
+                self.w_trans[i]   = np.nan
+                self.tau_trans[i] = np.nan
             else:
-                self.a_trans[i] = popt[0]
-                self.b_trans[i] = popt[1]
-                self.c_trans[i] = popt[2]
-                if self.nonexp:
-                    self.d_trans[i] = popt[3]
-
+                self.w_trans[i] = parms[0]
+                if self.double_exp:
+                    self.tau_trans[i,0] = parms[1]
+                    self.tau_trans[i,1] = parms[2]
+                else:
+                    self.tau_trans[i] = parms[1]
 
             ### |--------------------| ###
             ### | Orientational part | ###
@@ -427,24 +523,22 @@ class solvent_temporal_analysis(object):
                                                         0).astype(float)
                 corr_distr /= corr_distr[0]
 
-                self.tau_orient[_wat_data_i, i] = int_lifetime(corr_distr, self.timestep)
+                parms, R2 = fit_lifetime_expansion(corr_distr, 
+                                                    dt=self.timestep,
+                                                    double_exp=self.double_exp,
+                                                    verbose=self.verbose)
 
-                popt, pcov  = fit_lifetime(corr_distr,
-                                           dt=self.timestep,
-                                           non_exponential=self.nonexp)
+                self.R2_orient[_wat_data_i, i]  = R2
 
-                if popt[0] == np.nan or popt.shape[0]==1:
-                    self.a_orient[_wat_data_i, i] = np.nan
-                    self.b_orient[_wat_data_i, i] = np.nan
-                    self.c_orient[_wat_data_i, i] = np.nan
-                    if self.nonexp:
-                        self.d_orient[_wat_data_i, i] = np.nan
-
+                if parms[0] == np.nan or parms.shape[0]==1:
+                    self.w_orient[_wat_data_i, i]   = np.nan
+                    self.tau_orient[_wat_data_i, i] = np.nan
                 else:
-                    self.a_orient[_wat_data_i, i] = popt[0]
-                    self.b_orient[_wat_data_i, i] = popt[1]
-                    self.c_orient[_wat_data_i, i] = popt[2]
-                    if self.nonexp:
-                        self.d_orient[_wat_data_i, i] = popt[3]
+                    self.w_orient[_wat_data_i, i] = parms[0]
+                    if self.double_exp:
+                        self.tau_orient[_wat_data_i, i, 0] = parms[1]
+                        self.tau_orient[_wat_data_i, i, 1] = parms[2]
+                    else:
+                        self.tau_orient[_wat_data_i, i] = parms[1]
 
         self.out_temporal_model()
