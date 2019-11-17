@@ -94,11 +94,6 @@ def parse_args():
                               iterations are performed for windows of legnth --window. \
                               Default is 0. %s' %process_data_info)
 
-    parser.add_argument('-ne', '--nonexp',
-                        action='store_true',
-                        help='Use non-exponential functional fitting. \
-                              Default is off (=no non-exponential fitting). %s' %process_data_info)
-
     parser.add_argument('-pl', '--plot',
                         action='store_true',
                         help='Turn on plotting. Default is off (=no plotting). %s' %process_data_info)
@@ -113,6 +108,10 @@ def parse_args():
                         default=1,
                         help='Legendre polynomial used for calculation of orientational lifetimes. \
                               Can be either 1 or 2. Default is 1(=First order Legendre polynomial). %s' %process_data_info)
+
+    parser.add_argument('-de', '--double-exp',
+                        action='store_true',
+                        help='Perform double exponential fitting. %s' %process_data_info)
 
     parser.add_argument('-v', '--verbose',
                         action='store_true',
